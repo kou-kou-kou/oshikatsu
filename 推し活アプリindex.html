@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推し活ログ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+        .tab-active {
+            border-bottom: 2px solid #1f2937;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .tab-inactive {
+            color: #9ca3af;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen pb-20">
+
+    <!-- Toast Notification Box -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-200%] transition-transform duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-sm">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">保存しました</span>
+    </div>
+
+    <!-- Header -->
+    <header class="max-w-md mx-auto px-4 pt-4 pb-2 flex justify-between items-center bg-white sticky top-0 z-30 border-b border-gray-100">
+        <div class="flex items-center space-x-2.5">
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-gray-900">推し活ログ</h1>
+                <p id="header-subtitle" class="text-xs text-gray-500 font-medium">DollyKiss / 雪見ましろ</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <!-- Oshi Selector Dropdown -->
+            <select id="oshi-switcher" onchange="switchOshiMember(this.value)" class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-2 rounded-xl focus:outline-none cursor-pointer border border-gray-200">
+                <!-- Injected dynamically -->
+            </select>
+            <button onclick="switchTab('record')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-2 rounded-full shadow-md flex items-center space-x-1 transition active:scale-95">
+                <i class="fa-solid fa-plus"></i>
+                <span>記録</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="max-w-md mx-auto px-4 flex justify-around border-b border-gray-100 bg-white sticky top-[61px] z-30 text-sm">
+        <button onclick="switchTab('home')" id="nav-home" class="py-3 px-2 tab-active transition">ホーム</button>
+        <button onclick="switchTab('record')" id="nav-record" class="py-3 px-2 tab-inactive transition">記録入力</button>
+        <button onclick="switchTab('analytics')" id="nav-analytics" class="py-3 px-2 tab-inactive transition">分析・グラフ</button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="py-3 px-2 tab-inactive transition">設定・保存</button>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-md mx-auto px-4 pt-4">
+
+        <!-- ==================== HOME TAB ==================== -->
+        <section id="tab-home" class="space-y-4">
+            <!-- Card 1: Oshimen & Anniversary Card -->
+            <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div class="space-y-2 flex-1 pr-3">
+                        <div class="inline-block bg-gray-100 text-gray-800 text-xs font-semibold px-3 py-1 rounded-full" id="home-group-badge">
+                            DollyKiss
+                        </div>
+                        
+                        <div>
+                            <!-- Oshi name in solid black -->
+                            <h2 id="home-oshi-name" class="text-2xl font-bold text-gray-900 truncate">雪見ましろ</h2>
+                        </div>
+
+                        <!-- Anniversary date & Days count right below oshi name -->
+                        <div class="flex items-center space-x-2 text-xs text-gray-600 font-medium">
+                            <i class="fa-regular fa-calendar text-gray-400"></i>
+                            <span>記念日: <span id="home-anniversary-date">2026/11/03</span></span>
+                        </div>
+
+                        <div class="pt-1 flex items-baseline space-x-1">
+                            <span class="text-xs text-gray-500 font-medium">推して何日目</span>
+                        </div>
+                        <div class="flex items-baseline space-x-1.5">
+                            <span id="home-days-count" class="text-3xl font-extrabold tracking-tight text-gray-900">7</span>
+                            <span class="text-base font-bold text-gray-800">日目</span>
+                        </div>
+                    </div>
+                    <!-- Oshimen Photo -->
+                    <div class="w-28 h-36 bg-gray-100 rounded-2xl overflow-hidden shadow-inner flex-shrink-0 border border-gray-100 relative">
+                        <img id="home-oshi-img" src="https://placehold.co/200x260/f3f4f6/9ca3af?text=Oshi" alt="推しメン画像" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x260/f3f4f6/9ca3af?text=Oshi'">
+                    </div>
+                </div>
+
+                <!-- 100-day / 1-year Milestone Footer -->
+                <div class="mt-5 pt-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-600 font-medium">
+                    <span id="home-milestone-text">100日目まで あと93日</span>
+                    <span id="home-milestone-target-date" class="text-gray-400">2027/02/10</span>
+                </div>
+            </div>
+
+            <!-- Card 2: Summary Cards -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+                    <span class="text-xs text-gray-500 font-medium">来場回数</span>
+                    <div class="mt-2">
+                        <span id="summary-visit-count" class="text-xl font-bold text-gray-900">2</span>
+                        <span class="text-xs text-gray-600 ml-0.5">回</span>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+                    <span class="text-xs text-gray-500 font-medium">累計チェキ枚数</span>
+                    <div class="mt-2">
+                        <span id="summary-total-cheki" class="text-xl font-bold text-gray-900">2</span>
+                        <span class="text-xs text-gray-600 ml-0.5">枚</span>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+                    <span class="text-xs text-gray-500 font-medium">合計金額</span>
+                    <div class="mt-2">
+                        <span id="summary-total-price" class="text-lg font-bold text-gray-900">¥3,000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Cheki/Item Breakdown -->
+            <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-gray-900 text-sm">チェキの種類別内訳</h3>
+                    <span class="text-[11px] text-gray-400">設定で名称・単価変更可</span>
+                </div>
+                <div id="home-breakdown-list" class="space-y-3">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+
+            <!-- Recent Logs Preview -->
+            <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-gray-900 text-sm">直近の記録</h3>
+                    <button onclick="switchTab('analytics')" class="text-xs text-indigo-600 font-semibold hover:underline">すべて見る</button>
+                </div>
+                <div id="home-recent-logs" class="space-y-2">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== RECORD INPUT TAB ==================== -->
+        <section id="tab-record" class="space-y-4 hidden">
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
+                <div class="flex justify-between items-center mb-5">
+                    <h2 class="text-base font-bold text-gray-900">イベント・チェキ記録の追加</h2>
+                    <span id="editing-badge" class="hidden bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">編集中</span>
+                </div>
+                <form id="record-form" onsubmit="handleRecordSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="edit-record-id">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">日付</label>
+                        <input type="date" id="rec-date" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">会場名</label>
+                        <input type="text" id="rec-venue" list="venue-list" placeholder="例: Zepp Tokyo" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+                        <datalist id="venue-list"></datalist>
+                    </div>
+
+                    <div class="pt-2">
+                        <label class="block text-xs font-semibold text-gray-700 mb-2">枚数入力（パターン別）</label>
+                        <div class="space-y-3" id="record-cheki-inputs"></div>
+                    </div>
+
+                    <div class="pt-4 flex space-x-3">
+                        <button type="submit" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 rounded-2xl shadow-md text-sm transition active:scale-95">
+                            <i class="fa-solid fa-floppy-disk mr-1.5"></i> 記録保存 & 自動バックアップ
+                        </button>
+                        <button type="button" id="cancel-edit-btn" onclick="resetRecordForm()" class="hidden bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-4 py-3.5 rounded-2xl text-sm transition">
+                            キャンセル
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-4">
+                <h3 class="font-bold text-gray-900 text-sm">記録履歴の編集・削除</h3>
+                <div id="history-list" class="space-y-3 max-h-80 overflow-y-auto no-scrollbar"></div>
+            </div>
+        </section>
+
+        <!-- ==================== ANALYTICS TAB ==================== -->
+        <section id="tab-analytics" class="space-y-5 hidden">
+            <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-3">
+                <h3 class="font-bold text-gray-900 text-sm">チェキ（アイテム）種類別 比率内訳</h3>
+                <div class="h-64 relative flex justify-center items-center">
+                    <canvas id="chekiTypesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-3">
+                <h3 class="font-bold text-gray-900 text-sm">会場別 来場回数・割合</h3>
+                <div id="venue-share-list" class="space-y-2.5"></div>
+            </div>
+        </section>
+
+        <!-- ==================== SETTINGS TAB ==================== -->
+        <section id="tab-settings" class="space-y-5 hidden">
+            <!-- Multi-Oshi Management Card -->
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-base font-bold text-gray-900">推しメン切替・管理</h2>
+                    <button type="button" onclick="addNewOshiMember()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition flex items-center space-x-1">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>新しい推しを追加</span>
+                    </button>
+                </div>
+                <div class="space-y-2" id="oshi-management-list">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-4">
+                <h2 class="text-base font-bold text-gray-900">現在の推しメン設定</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">グループ名</label>
+                        <input type="text" id="set-group-name" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">推しメン名前</label>
+                        <input type="text" id="set-oshi-name" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">担当カラー</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="color" id="set-oshi-color" value="#f43f5e" class="w-10 h-10 bg-transparent border-0 cursor-pointer rounded-xl">
+                            <span class="text-xs text-gray-500">テーマカラーとして保持</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">記念日 (0日目としてカウント)</label>
+                        <input type="date" id="set-anniversary" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">推しメン画像 (URLまたはファイル選択)</label>
+                        <div class="flex space-x-2">
+                            <input type="url" id="set-oshi-img-url" placeholder="https://..." class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            <label class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold px-3 py-2.5 rounded-xl flex items-center cursor-pointer transition">
+                                <i class="fa-solid fa-upload mr-1"></i> 画像ファイル
+                                <input type="file" id="set-oshi-img-file" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-base font-bold text-gray-900">チェキ・アイテム設定</h2>
+                    <button type="button" onclick="addChekiPattern()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>パターン追加</span>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500">名称・単価・色の変更、および新規項目の追加・削除が可能です。</p>
+                <div class="space-y-4" id="settings-cheki-patterns"></div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-4">
+                <h2 class="text-base font-bold text-gray-900">データバックアップ＆復元</h2>
+                <p class="text-xs text-gray-500">自動バックアップファイル名は「推しメンの名前_その日の日付.json」で保存されます。</p>
+                
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="downloadBackup()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-2xl text-xs flex items-center justify-center space-x-1.5 transition active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-download"></i>
+                        <span>手動バックアップ保存</span>
+                    </button>
+                    <label class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-2xl text-xs flex items-center justify-center space-x-1.5 cursor-pointer transition">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>ファイルから復元</span>
+                        <input type="file" accept=".json" onchange="importBackup(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="saveAllSettings()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl shadow-md text-sm transition active:scale-95">
+                    <i class="fa-solid fa-check mr-1.5"></i> 設定を保存する
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- App Logic Script -->
+    <script>
+        let defaultAppData = {
+            currentOshiId: "oshi_1",
+            oshiList: [
+                {
+                    id: "oshi_1",
+                    groupName: "DollyKiss",
+                    oshiName: "雪見ましろ",
+                    oshiColor: "#f43f5e",
+                    anniversaryDate: "2026-11-03",
+                    oshiImgUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+                    chekiPatterns: [
+                        { id: "p1", name: "サインあり", price: 2000, color: "#f43f5e" },
+                        { id: "p2", name: "サインなし", price: 1000, color: "#3b82f6" },
+                        { id: "p3", name: "その他", price: 1500, color: "#10b981" }
+                    ],
+                    records: [
+                        {
+                            id: "rec_1",
+                            date: "2026-11-03",
+                            venue: "渋谷O-EAST",
+                            counts: { p1: 1, p2: 1, p3: 0 }
+                        }
+                    ]
+                }
+            ]
+        };
+
+        let appData = JSON.parse(localStorage.getItem("oshi_log_multi_state")) || defaultAppData;
+        if (!appData.oshiList || appData.oshiList.length === 0) {
+            appData = defaultAppData;
+        }
+
+        let chekiTypesChartInst = null;
+
+        function getCurrentOshi() {
+            let oshi = appData.oshiList.find(o => o.id === appData.currentOshiId);
+            if (!oshi) {
+                oshi = appData.oshiList[0];
+                appData.currentOshiId = oshi.id;
+            }
+            return oshi;
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById("toast");
+            const toastMsg = document.getElementById("toast-message");
+            const toastIcon = document.getElementById("toast-icon");
+            
+            toastMsg.textContent = message;
+            toastIcon.className = isError ? "fa-solid fa-circle-exclamation text-rose-400" : "fa-solid fa-circle-check text-emerald-400";
+
+            toast.classList.remove("translate-y-[-200%]");
+            toast.classList.add("translate-y-0");
+            setTimeout(() => {
+                toast.classList.remove("translate-y-0");
+                toast.classList.add("translate-y-[-200%]");
+            }, 3000);
+        }
+
+        // Automatic JSON Backup with exact filename: "[推しメンの名前]_[その日の日付].json" with duplicate timestamp avoidance
+        function triggerAutoBackup() {
+            try {
+                const currentOshi = getCurrentOshi();
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                
+                const now = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+                const timeSuffix = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                const sanitizedOshiName = (currentOshi.oshiName || "oshi").replace(/[\\/:*?"<>|]/g, "");
+                
+                let filename = `${sanitizedOshiName}_${todayStr}_${timeSuffix}.json`;
+                
+                downloadAnchor.setAttribute("download", filename);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                showToast(`バックアップ保存: ${filename}`);
+            } catch (e) {
+                console.error("Auto backup failed", e);
+            }
+        }
+
+        function persistState(triggerBackup = false) {
+            localStorage.setItem("oshi_log_multi_state", JSON.stringify(appData));
+            renderApp();
+            if (triggerBackup) {
+                triggerAutoBackup();
+            }
+        }
+
+        function switchTab(tabId) {
+            ['home', 'record', 'analytics', 'settings'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).className = "py-3 px-2 tab-inactive transition";
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).className = "py-3 px-2 tab-active transition";
+
+            if (tabId === 'analytics') {
+                setTimeout(renderCharts, 50);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function switchOshiMember(oshiId) {
+            appData.currentOshiId = oshiId;
+            persistState(false);
+            switchTab('home');
+            showToast("推しメンを切り替えました");
+        }
+
+        function addNewOshiMember() {
+            let newId = "oshi_" + Date.now();
+            let newOshi = {
+                id: newId,
+                groupName: "新規グループ",
+                oshiName: "新しい推しメン",
+                oshiColor: "#3b82f6",
+                anniversaryDate: new Date().toISOString().slice(0,10),
+                oshiImgUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+                chekiPatterns: [
+                    { id: "p1", name: "サインあり", price: 2000, color: "#f43f5e" },
+                    { id: "p2", name: "サインなし", price: 1000, color: "#3b82f6" }
+                ],
+                records: []
+            };
+            appData.oshiList.push(newOshi);
+            appData.currentOshiId = newId;
+            persistState(false);
+            switchTab('settings');
+            showToast("新しい推しメンを追加しました");
+        }
+
+        function deleteOshiMember(oshiId) {
+            if (appData.oshiList.length <= 1) {
+                showToast("少なくとも1人の推しメンが必要です", true);
+                return;
+            }
+            if (confirm("この推しメンデータを削除しますか？")) {
+                appData.oshiList = appData.oshiList.filter(o => o.id !== oshiId);
+                appData.currentOshiId = appData.oshiList[0].id;
+                persistState(false);
+                switchTab('home');
+                showToast("推しメンを削除しました");
+            }
+        }
+
+        function renderApp() {
+            const currentOshi = getCurrentOshi();
+
+            // Render Oshi Switcher Dropdown
+            let switcherHtml = "";
+            appData.oshiList.forEach(o => {
+                let selected = o.id === currentOshi.id ? "selected" : "";
+                switcherHtml += `<option value="${o.id}" ${selected}>${o.oshiName} (${o.groupName})</option>`;
+            });
+            document.getElementById("oshi-switcher").innerHTML = switcherHtml;
+
+            document.getElementById("header-subtitle").textContent = `${currentOshi.groupName} / ${currentOshi.oshiName}`;
+
+            document.getElementById("home-group-badge").textContent = currentOshi.groupName;
+            document.getElementById("home-anniversary-date").textContent = currentOshi.anniversaryDate.replace(/-/g, '/');
+            
+            const oshiNameEl = document.getElementById("home-oshi-name");
+            oshiNameEl.textContent = currentOshi.oshiName;
+            oshiNameEl.style.color = "#1f2937"; // Solid black
+            
+            const oshiImg = document.getElementById("home-oshi-img");
+            if (currentOshi.oshiImgUrl) {
+                oshiImg.src = currentOshi.oshiImgUrl;
+            }
+
+            // Anniversary calculation (0-day rule: Anniversary date = day 1)
+            const annivDate = new Date(currentOshi.anniversaryDate);
+            const today = new Date();
+            annivDate.setHours(0,0,0,0);
+            today.setHours(0,0,0,0);
+            
+            const diffTime = today - annivDate;
+            let diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            if (diffDays < 1) diffDays = 1;
+
+            document.getElementById("home-days-count").textContent = diffDays;
+
+            // 100-day or 1-year (365-day) unit milestone calculation
+            let nextMilestoneDays = 100;
+            if (diffDays >= 100) {
+                nextMilestoneDays = Math.ceil(diffDays / 100) * 100;
+                if (nextMilestoneDays === diffDays) nextMilestoneDays += 100;
+            }
+            
+            let yearsPassed = Math.floor((today - annivDate) / (1000 * 60 * 60 * 24 * 365.25));
+            let nextYearDays = (yearsPassed + 1) * 365;
+            
+            let targetMilestoneDays = nextMilestoneDays;
+            let milestoneLabel = `${nextMilestoneDays}日目`;
+            if (Math.abs(nextYearDays - diffDays) < Math.abs(nextMilestoneDays - diffDays) && nextYearDays > diffDays) {
+                targetMilestoneDays = nextYearDays;
+                let yearNum = yearsPassed + 1;
+                milestoneLabel = `${yearNum}年記念日`;
+            }
+
+            let daysToMilestone = targetMilestoneDays - diffDays;
+            if (daysToMilestone < 0) daysToMilestone = 0;
+
+            const milestoneDateObj = new Date(annivDate);
+            milestoneDateObj.setDate(annivDate.getDate() + (targetMilestoneDays - 1));
+            const milestoneDateStr = `${milestoneDateObj.getFullYear()}/${String(milestoneDateObj.getMonth()+1).padStart(2,'0')}/${String(milestoneDateObj.getDate()).padStart(2,'0')}`;
+
+            document.getElementById("home-milestone-text").textContent = `${milestoneLabel}まで あと${daysToMilestone}日`;
+            document.getElementById("home-milestone-target-date").textContent = milestoneDateStr;
+
+            // Summary calculations
+            let totalVisits = currentOshi.records.length;
+            let totalChekiCount = 0;
+            let totalPrice = 0;
+
+            let patternCounts = {};
+            currentOshi.chekiPatterns.forEach(p => { patternCounts[p.id] = 0; });
+
+            currentOshi.records.forEach(r => {
+                for (let key in r.counts) {
+                    let qty = Number(r.counts[key]) || 0;
+                    totalChekiCount += qty;
+                    if (patternCounts[key] !== undefined) {
+                        patternCounts[key] += qty;
+                    }
+                }
+            });
+
+            currentOshi.chekiPatterns.forEach(p => {
+                totalPrice += (patternCounts[p.id] || 0) * p.price;
+            });
+
+            document.getElementById("summary-visit-count").textContent = totalVisits;
+            document.getElementById("summary-total-cheki").textContent = totalChekiCount;
+            document.getElementById("summary-total-price").textContent = `¥${totalPrice.toLocaleString()}`;
+
+            // Home Breakdown List
+            let breakdownHtml = "";
+            currentOshi.chekiPatterns.forEach(p => {
+                let count = patternCounts[p.id] || 0;
+                let subTotal = count * p.price;
+                breakdownHtml += `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${p.color};"></span>
+                            <span class="font-semibold text-sm text-gray-800">${p.name}</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="font-bold text-sm text-gray-900">${count}<span class="text-xs font-normal text-gray-500 ml-0.5">枚</span></span>
+                            <span class="text-xs font-medium text-gray-500">¥${subTotal.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById("home-breakdown-list").innerHTML = breakdownHtml;
+
+            // Recent Logs Preview
+            let recentHtml = "";
+            const sortedRecords = [...currentOshi.records].sort((a,b) => new Date(b.date) - new Date(a.date));
+            if (sortedRecords.length === 0) {
+                recentHtml = `<p class="text-xs text-gray-400 text-center py-2">記録がまだありません</p>`;
+            } else {
+                sortedRecords.slice(0, 3).forEach(r => {
+                    let rTotalCheki = Object.values(r.counts).reduce((a,b) => a + Number(b), 0);
+                    recentHtml += `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-2xl text-xs">
+                            <div>
+                                <span class="font-bold text-gray-900">${r.venue}</span>
+                                <span class="text-gray-400 ml-2">${r.date}</span>
+                            </div>
+                            <div class="font-semibold text-gray-700">
+                                合計 ${rTotalCheki}枚
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById("home-recent-logs").innerHTML = recentHtml;
+
+            renderRecordInputs();
+            renderHistoryList();
+            renderSettingsForm();
+        }
+
+        function renderRecordInputs(existingCounts = null) {
+            const currentOshi = getCurrentOshi();
+            let container = document.getElementById("record-cheki-inputs");
+            let html = "";
+            currentOshi.chekiPatterns.forEach(p => {
+                let val = existingCounts ? (existingCounts[p.id] || 0) : 0;
+                html += `
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-2xl">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${p.color};"></span>
+                            <div>
+                                <p class="text-xs font-bold text-gray-800">${p.name}</p>
+                                <p class="text-[10px] text-gray-500">¥${p.price.toLocaleString()}/枚</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button type="button" onclick="adjustCount('${p.id}', -1)" class="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-700 font-bold flex items-center justify-center hover:bg-gray-100">-</button>
+                            <input type="number" min="0" id="cnt_${p.id}" value="${val}" class="w-12 text-center bg-white border border-gray-200 rounded-xl py-1.5 text-sm font-bold text-gray-900 focus:outline-none">
+                            <button type="button" onclick="adjustCount('${p.id}', 1)" class="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-700 font-bold flex items-center justify-center hover:bg-gray-100">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+
+            let venues = [...new Set(currentOshi.records.map(r => r.venue))];
+            let venueListHtml = "";
+            venues.forEach(v => { venueListHtml += `<option value="${v}">`; });
+            document.getElementById("venue-list").innerHTML = venueListHtml;
+        }
+
+        function adjustCount(id, delta) {
+            let input = document.getElementById(`cnt_${id}`);
+            if (input) {
+                let current = parseInt(input.value) || 0;
+                let newVal = current + delta;
+                if (newVal < 0) newVal = 0;
+                input.value = newVal;
+            }
+        }
+
+        function handleRecordSubmit(e) {
+            e.preventDefault();
+            const currentOshi = getCurrentOshi();
+            let editId = document.getElementById("edit-record-id").value;
+            let date = document.getElementById("rec-date").value;
+            let venue = document.getElementById("rec-venue").value.trim();
+
+            let counts = {};
+            currentOshi.chekiPatterns.forEach(p => {
+                counts[p.id] = parseInt(document.getElementById(`cnt_${p.id}`).value) || 0;
+            });
+
+            if (editId) {
+                let idx = currentOshi.records.findIndex(r => r.id === editId);
+                if (idx !== -1) {
+                    currentOshi.records[idx].date = date;
+                    currentOshi.records[idx].venue = venue;
+                    currentOshi.records[idx].counts = counts;
+                }
+                showToast("記録を更新しました");
+            } else {
+                let newRecord = {
+                    id: "rec_" + Date.now(),
+                    date: date,
+                    venue: venue,
+                    counts: counts
+                };
+                currentOshi.records.push(newRecord);
+                showToast("記録を追加しました");
+            }
+
+            resetRecordForm();
+            persistState(true); // Triggers automatic backup download with [oshi]_[date].json
+            switchTab('home');
+        }
+
+        function resetRecordForm() {
+            document.getElementById("record-form").reset();
+            document.getElementById("edit-record-id").value = "";
+            document.getElementById("editing-badge").classList.add("hidden");
+            document.getElementById("cancel-edit-btn").classList.add("hidden");
+            document.getElementById("rec-date").value = new Date().toISOString().slice(0,10);
+            renderRecordInputs();
+        }
+
+        function editRecord(id) {
+            const currentOshi = getCurrentOshi();
+            let rec = currentOshi.records.find(r => r.id === id);
+            if (!rec) return;
+
+            document.getElementById("edit-record-id").value = rec.id;
+            document.getElementById("rec-date").value = rec.date;
+            document.getElementById("rec-venue").value = rec.venue;
+            renderRecordInputs(rec.counts);
+
+            document.getElementById("editing-badge").classList.remove("hidden");
+            document.getElementById("cancel-edit-btn").classList.remove("hidden");
+            switchTab('record');
+        }
+
+        function deleteRecord(id) {
+            const currentOshi = getCurrentOshi();
+            if (confirm("この記録を削除してもよろしいですか？")) {
+                currentOshi.records = currentOshi.records.filter(r => r.id !== id);
+                persistState(true);
+                showToast("記録を削除しました");
+            }
+        }
+
+        function renderHistoryList() {
+            const currentOshi = getCurrentOshi();
+            let listContainer = document.getElementById("history-list");
+            let sorted = [...currentOshi.records].sort((a,b) => new Date(b.date) - new Date(a.date));
+            if (sorted.length === 0) {
+                listContainer.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">保存された記録はありません</p>`;
+                return;
+            }
+
+            let html = "";
+            sorted.forEach(r => {
+                let totalC = Object.values(r.counts).reduce((a,b) => a + Number(b), 0);
+                html += `
+                    <div class="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-sm text-gray-900">${r.venue}</span>
+                                <span class="text-xs text-gray-400">${r.date}</span>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-0.5">合計: <span class="font-semibold">${totalC}枚</span></p>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <button onclick="editRecord('${r.id}')" class="w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-700 flex items-center justify-center hover:bg-gray-100 text-xs"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteRecord('${r.id}')" class="w-8 h-8 rounded-xl bg-white border border-rose-200 text-rose-600 flex items-center justify-center hover:bg-rose-50 text-xs"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        function renderSettingsForm() {
+            const currentOshi = getCurrentOshi();
+
+            // Render Oshi Management List
+            let oshiMgmtHtml = "";
+            appData.oshiList.forEach(o => {
+                let isCurrent = o.id === currentOshi.id;
+                oshiMgmtHtml += `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl text-xs">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${o.oshiColor || '#3b82f6'};"></span>
+                            <div>
+                                <p class="font-bold text-gray-900">${o.oshiName}</p>
+                                <p class="text-[10px] text-gray-500">${o.groupName}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${isCurrent ? '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">表示中</span>' : `<button type="button" onclick="switchOshiMember('${o.id}')" class="bg-slate-900 text-white px-2.5 py-1 rounded-xl text-[10px] font-semibold">切替</button>`}
+                            ${appData.oshiList.length > 1 ? `<button type="button" onclick="deleteOshiMember('${o.id}')" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById("oshi-management-list").innerHTML = oshiMgmtHtml;
+
+            document.getElementById("set-group-name").value = currentOshi.groupName;
+            document.getElementById("set-oshi-name").value = currentOshi.oshiName;
+            document.getElementById("set-oshi-color").value = currentOshi.oshiColor || "#f43f5e";
+            document.getElementById("set-anniversary").value = currentOshi.anniversaryDate;
+            document.getElementById("set-oshi-img-url").value = currentOshi.oshiImgUrl;
+
+            let patternsHtml = "";
+            currentOshi.chekiPatterns.forEach((p, idx) => {
+                patternsHtml += `
+                    <div class="p-4 bg-gray-50 rounded-2xl space-y-3 relative group-pattern-box" data-id="${p.id}">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-gray-700">パターン ${idx + 1}</span>
+                            <div class="flex items-center space-x-2">
+                                <input type="color" id="pattern_color_${p.id}" value="${p.color}" class="w-8 h-6 bg-transparent border-0 cursor-pointer">
+                                <button type="button" onclick="removeChekiPattern('${p.id}')" class="text-rose-500 hover:text-rose-700 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 mb-0.5">名称</label>
+                                <input type="text" id="pattern_name_${p.id}" value="${p.name}" class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 mb-0.5">単価 (円)</label>
+                                <input type="number" id="pattern_price_${p.id}" value="${p.price}" class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById("settings-cheki-patterns").innerHTML = patternsHtml;
+        }
+
+        function addChekiPattern() {
+            collectSettingsInputsToMemory();
+            const currentOshi = getCurrentOshi();
+            
+            const newId = "p_" + Date.now();
+            const colors = ["#f43f5e", "#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            currentOshi.chekiPatterns.push({
+                id: newId,
+                name: "新しいアイテム",
+                price: 1000,
+                color: randomColor
+            });
+
+            renderSettingsForm();
+            showToast("パターンを追加しました");
+        }
+
+        function removeChekiPattern(id) {
+            const currentOshi = getCurrentOshi();
+            if (currentOshi.chekiPatterns.length <= 1) {
+                showToast("少なくとも1つのパターンが必要です", true);
+                return;
+            }
+            if (confirm("このパターンを削除しますか？")) {
+                collectSettingsInputsToMemory();
+                currentOshi.chekiPatterns = currentOshi.chekiPatterns.filter(p => p.id !== id);
+                renderSettingsForm();
+                showToast("パターンを削除しました");
+            }
+        }
+
+        function collectSettingsInputsToMemory() {
+            const currentOshi = getCurrentOshi();
+            currentOshi.groupName = document.getElementById("set-group-name").value.trim() || "推しグループ";
+            currentOshi.oshiName = document.getElementById("set-oshi-name").value.trim() || "推しメン";
+            currentOshi.oshiColor = document.getElementById("set-oshi-color").value;
+            currentOshi.anniversaryDate = document.getElementById("set-anniversary").value || new Date().toISOString().slice(0,10);
+            currentOshi.oshiImgUrl = document.getElementById("set-oshi-img-url").value.trim();
+
+            currentOshi.chekiPatterns.forEach(p => {
+                let nameInput = document.getElementById(`pattern_name_${p.id}`);
+                let priceInput = document.getElementById(`pattern_price_${p.id}`);
+                let colorInput = document.getElementById(`pattern_color_${p.id}`);
+
+                if (nameInput) p.name = nameInput.value.trim() || p.name;
+                if (priceInput) p.price = parseInt(priceInput.value) || 0;
+                if (colorInput) p.color = colorInput.value;
+            });
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(uploadEvent) {
+                    document.getElementById("set-oshi-img-url").value = uploadEvent.target.result;
+                    showToast("画像を読み込みました");
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveAllSettings() {
+            collectSettingsInputsToMemory();
+            persistState(true);
+            showToast("設定を保存しました");
+            switchTab('home');
+        }
+
+        function downloadBackup() {
+            triggerAutoBackup();
+        }
+
+        function importBackup(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    let parsed = JSON.parse(evt.target.result);
+                    if (parsed.oshiList && Array.isArray(parsed.oshiList)) {
+                        appData = parsed;
+                        persistState(false);
+                        renderApp();
+                        showToast("データを正常に復元しました");
+                        switchTab('home');
+                    } else if (parsed.records && parsed.chekiPatterns) {
+                        // Backward compatibility for single oshi json format
+                        let migrated = {
+                            currentOshiId: "oshi_1",
+                            oshiList: [{
+                                id: "oshi_1",
+                                groupName: parsed.groupName || "推しグループ",
+                                oshiName: parsed.oshiName || "推しメン",
+                                oshiColor: "#f43f5e",
+                                anniversaryDate: parsed.anniversaryDate || new Date().toISOString().slice(0,10),
+                                oshiImgUrl: parsed.oshiImgUrl || "",
+                                chekiPatterns: parsed.chekiPatterns,
+                                records: parsed.records
+                            }]
+                        };
+                        appData = migrated;
+                        persistState(false);
+                        renderApp();
+                        showToast("旧フォーマットデータを正常に復元しました");
+                        switchTab('home');
+                    } else {
+                        showToast("無効なバックアップファイルです", true);
+                    }
+                } catch (err) {
+                    showToast("JSONの読み込みに失敗しました", true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderCharts() {
+            const currentOshi = getCurrentOshi();
+            let typeLabels = [];
+            let typeData = [];
+            let typeColors = [];
+
+            let patternTotals = {};
+            currentOshi.chekiPatterns.forEach(p => { patternTotals[p.id] = 0; });
+            currentOshi.records.forEach(r => {
+                for (let key in r.counts) {
+                    if (patternTotals[key] !== undefined) {
+                        patternTotals[key] += Number(r.counts[key]) || 0;
+                    }
+                }
+            });
+
+            currentOshi.chekiPatterns.forEach(p => {
+                typeLabels.push(p.name);
+                typeData.push(patternTotals[p.id] || 0);
+                typeColors.push(p.color);
+            });
+
+            const ctxTypes = document.getElementById('chekiTypesChart').getContext('2d');
+            if (chekiTypesChartInst) chekiTypesChartInst.destroy();
+            chekiTypesChartInst = new Chart(ctxTypes, {
+                type: 'doughnut',
+                data: {
+                    labels: typeLabels,
+                    datasets: [{
+                        data: typeData,
+                        backgroundColor: typeColors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+
+            let venueFrequency = {};
+            let totalVisitsCount = currentOshi.records.length;
+            currentOshi.records.forEach(r => {
+                if (!r.venue) return;
+                venueFrequency[r.venue] = (venueFrequency[r.venue] || 0) + 1;
+            });
+
+            let venueShareHtml = "";
+            let sortedVenues = Object.entries(venueFrequency).sort((a,b) => b[1] - a[1]);
+            
+            if (sortedVenues.length === 0) {
+                venueShareHtml = `<p class="text-xs text-gray-400 text-center py-2">データがありません</p>`;
+            } else {
+                sortedVenues.forEach(([venue, count]) => {
+                    let percentage = totalVisitsCount > 0 ? Math.round((count / totalVisitsCount) * 100) : 0;
+                    venueShareHtml += `
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-semibold text-gray-800">
+                                <span>${venue}</span>
+                                <span>${count}回 (${percentage}%)</span>
+                            </div>
+                            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                                <div class="bg-indigo-600 h-full rounded-full" style="width: ${percentage}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById("venue-share-list").innerHTML = venueShareHtml;
+        }
+
+        window.onload = function() {
+            if(!document.getElementById("rec-date").value) {
+                document.getElementById("rec-date").value = new Date().toISOString().slice(0,10);
+            }
+            renderApp();
+        };
+    </script>
+</body>
+</html>
